@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ch2BaseFile - Template For Chapter 2 Examples</title>
+<script type="text/javascript">
+window.addEventListener('load', eventWindowLoaded, false);
+function eventWindowLoaded() {
+
+   canvasApp();
+
+}
+
+
+function canvasApp() {
+	var theCanvas = document.getElementById("canvas");
+	var context = theCanvas.getContext("2d");
+	var frame = 10;
+
+	test();
+
+    function drawScreen() {
+	
+		//draw a background so we can see the Canvas edges
+		context.fillStyle = "#aaaaaa";
+		context.fillRect(0, 0, theCanvas.width, theCanvas.height);
+		//context.save();
+	
+		console.log(frame);
+		frame += 10;
+		var x = 100;
+		var y = 100;
+		var width = 50;
+		var height = 50;	
+		
+       //make changes here.
+
+		
+		context.setTransform(1, 0, 0, 1, 0, 0);
+		context.translate(x+.5*width, y+.5*width);
+		context.rotate(frame * Math.PI / 180);
+		context.fillStyle 	= 'blue';
+		context.fillRect(-.5*width, -.5*height, width, height);
+	//	context.restore();
+		
+		//	context.clearRect (-.5*width, -.5*height, width, height);
+		//context.strokeRect(100,100, 50, 50);
+		if (frame == 360) frame = 0;
+	}
+	
+	function clearCanvas(){
+	    var canvas = document.getElementById("myCanvas");
+	    var context = canvas.getContext("2d");
+	    context.clearRect(0, 0, canvas.width, canvas.height);
+	}
+	
+	function test() {
+		console.log('hey');
+		setInterval(drawScreen, 100);
+	}
+}
+
+</script>
+</head>
+<body>
+<div style="position: absolute; top: 50px; left: 50px;">
+<canvas id="canvas" width="500" height="500">
+ Your browser does not support HTML5 Canvas.
+</canvas>
+</div>
+</body>
+</html>
