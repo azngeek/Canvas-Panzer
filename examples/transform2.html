@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ch2BaseFile - Template For Chapter 2 Examples</title>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+window.addEventListener('load', eventWindowLoaded, false);
+function eventWindowLoaded() {
+
+   canvasApp();
+
+}
+
+
+function canvasApp() {
+	//var theCanvas = document.getElementById("canvas");
+	//var context = theCanvas.getContext("2d");
+	
+	// get the context the jQuery way
+	var canvas = $("#canvas");
+	var context = canvas.get(0).getContext("2d");
+	
+	var playAnimation = true;
+	var startButton = $("#startAnimation");
+	var stopButton = $("#stopAnimation");
+	
+	// define the canvas width
+	var canvasWidth = canvas.width();
+	var canvasHeight = canvas.height();
+	
+	
+	// define tilesheet for panzer
+	var tileSheet = new Image();
+	tileSheet.src = "../images/tanks_sheet.png";
+	
+	// playermissiles
+	var playerMissiles = new Array();
+	
+	// define the values for x
+	var x = 0;
+	
+	
+	function playSound(sound, volume) {
+		console.log("Play Sound" + sound);
+	}
+	
+	
+	startButton.hide();
+	startButton.click(function() {
+		$(this).hide();
+		stopButton.show();
+		
+		playAnimation = true;
+		animate();
+	});
+	
+	stopButton.click(function() {
+		$(this).hide();
+		startButton.show();
+		
+		playAnimation = false;
+	});
+	
+	// define a shape object
+	var Shape = function(ctx, x, y) {
+		this.x = x;
+		this.y = y;
+		this.ctx = ctx;
+		this.move = function() {
+			this.ctx.fillRect(this.x, this.y, 10, 10);
+		}
+	}
+	
+	// declare a panzer
+	var Panzer = function(ctx, x, y) {
+		this.animationFrames = [1,2,3,4,5,6,7,8];
+		this.frameIndex = 0;
+		this.ctx = ctx;
+		this.x = x;
+		this.y = y;
+		this.hitHeight=32;
+		this.hitWidth=32;
+		this.rotation = 90;
+		
+		
+		this.move = function() {
+			
+				this.ctx.save();
+
+				this.ctx.setTransform(1,0,0,1,0,0)
+				this.angleInRadians = this.rotation * Math.PI / 180;
+				this.ctx.translate(this.x+16, this.y+16);
+				this.ctx.rotate(this.angleInRadians);
+
+				this.sourceX=Math.floor(this.animationFrames[this.frameIndex] % 8) *32;
+				this.sourceY=Math.floor(this.animationFrames[this.frameIndex] / 8) *32;
+			
+
+				this.ctx.drawImage(tileSheet, this.sourceX, this.sourceY,32,32, -16, -16,32,32);
+					this.ctx.restore();
+					this.ctx.strokeStyle = '#aff';
+					this.ctx.strokeRect(this.x, this.y, 32, 32);
+
+				this.ctx.restore();
+		//	console.log("Real-y: " + this.y);
+		//	console.log("Real-x: " + this.x);
+	
+			
+		}
+	}
+	
+	function boundingBoxCollide(object1, object2) {
+
+//			console.log("Object1: " + object1.x);
+//			console.log("Object2: " + object2.x);
+
+			var left1 = object1.x;
+			var left2 = object2.x + 14;
+			var right1 = object1.x + object1.hitWidth;
+			var right2 = object2.x + object2.hitWidth - 14;
+			var top1 = object1.y;
+			var top2 = object2.y + 14;
+			var bottom1 = object1.y + object1.hitHeight;
+			var bottom2 = object2.y + object2.hitHeight - 14;
+
+			if (bottom1 < top2) return(false);
+			if (top1 > bottom2) return(false);
+
+			if (right1 < left2) return(false);
+			if (left1 > right2) return(false);
+
+					console.log("Objekt 1 X: " + object1.x);
+					console.log("Objekt 1 Y: " + object1.y);
+					console.log("Objekt 1 Boden: " + object1.hitHeight);
+					console.log("Objekt 2 X: " + object2.x);
+					console.log("Objekt 2 Y: " + object2.y);
+					console.log("Objekt 2 Höhe: " + object2.hitHeight);
+			return(true);
+
+		};
+	
+	// declare the hero
+	var Hero = function(ctx, x, y) {
+		this.rotation = 90;
+		this.animationFrames = [9,10,11,12,13,14,15,16];
+		this.frameIndex = 0;
+		this.ctx = ctx;
+		this.facingX = 0;
+		this.facingY = 0;
+		this.x = x;
+		this.y = y;
+		this.angleInRadians = 0;
+		this.thrustAcceleration = 3;
+		this.movingX = 0;
+		this.movingY = 0;
+		
+
+		
+		
+		this.move = function() {
+			
+			//console.log("spawned");
+			this.ctx.save();
+			
+			this.ctx.setTransform(1,0,0,1,0,0)
+			this.angleInRadians = this.rotation * Math.PI / 180;
+			this.ctx.translate(this.x+16, this.y+16);
+			this.ctx.rotate(this.angleInRadians);
+		
+			this.sourceX=Math.floor(this.animationFrames[this.frameIndex] % 8) *32;
+			this.sourceY=Math.floor(this.animationFrames[this.frameIndex] / 8) *32;
+
+			this.ctx.drawImage(tileSheet, this.sourceX, this.sourceY,32,32, -16, -16,32,32);
+			
+			this.ctx.restore();
+			this.ctx.strokeStyle = '#faf';
+			this.ctx.strokeRect(this.x, this.y, 32, 32);
+			
+			this.ctx.restore();	
+			
+		}
+		
+		this.shoot = function() {
+			
+			// ich brauche einen frame rate counter
+		//	if (newPlayerMissile.length <= 10 ) {
+			
+			//ConsoleLog.log("fire playerMissile");
+					var newPlayerMissile={};
+				//	var angleInRadians = (objHero.rotation - 90)* Math.PI / 180;
+				
+					newPlayerMissile.dx=5*Math.cos(Math.PI*(this.rotation - 90)/180);
+					newPlayerMissile.dy=5*Math.sin(Math.PI*(this.rotation - 90)/180);
+					newPlayerMissile.x=objHero.x;
+					newPlayerMissile.y=objHero.y;
+					newPlayerMissile.life=120;
+					newPlayerMissile.lifeCtr=0;
+					newPlayerMissile.width=2;
+					newPlayerMissile.height=2;
+					
+					newPlayerMissile.hitHeight=32;
+					newPlayerMissile.hitWidth=32;
+					
+					if (playerMissiles.length < 100 ) {
+					playerMissiles.push(newPlayerMissile);
+					 }
+			//	}
+		}
+		
+	}
+	
+	function renderPlayerMissiles() {
+			var tempPlayerMissile={};
+			var playerMissileLength=playerMissiles.length-1;
+			//ConsoleLog.log("render playerMissileLength=" + playerMissileLength);
+			for (var playerMissileCtr=playerMissileLength;playerMissileCtr>=0;playerMissileCtr--){
+				//ConsoleLog.log("draw playert missile " + playerMissileCtr)
+				tempPlayerMissile=playerMissiles[playerMissileCtr];
+				context.save(); //save current state in stack 
+
+				context.drawImage(tileSheet, 5 * 32, 2 * 32,31,31, tempPlayerMissile.x, tempPlayerMissile.y,32,32);
+				context.strokeStyle = '#de0';
+				context.strokeRect(tempPlayerMissile.x, tempPlayerMissile.y, tempPlayerMissile.hitHeight, tempPlayerMissile.hitWidth);
+
+				context.restore(); //pop old state on to screen
+			}
+		}
+		function updatePlayerMissiles() {
+				var tempPlayerMissile={};
+				var playerMissileLength=playerMissiles.length - 1;
+				//ConsoleLog.log("update playerMissileLength=" + playerMissileLength);
+				for (var playerMissileCtr=playerMissileLength;playerMissileCtr>=0;playerMissileCtr--){
+					//console.log("update player missile" + playerMissileCtr)
+					tempPlayerMissile=playerMissiles[playerMissileCtr];
+					tempPlayerMissile.x+= tempPlayerMissile.dx * 1.5;
+					tempPlayerMissile.y+= tempPlayerMissile.dy * 1.5;
+				//	if (tempPlayerMissile.x > xMax) {
+				//	tempPlayerMissile.x=-tempPlayerMissile.width;
+				//	}else if (tempPlayerMissile.x<-tempPlayerMissile.width){
+				//		tempPlayerMissile.x=xMax;
+				//	}
+
+				//	if (tempPlayerMissile.y > yMax) {
+				//	tempPlayerMissile.y=-tempPlayerMissile.height;
+				//	}else if (tempPlayerMissile.y<-tempPlayerMissile.height){
+				//		tempPlayerMissile.y=yMax;
+				//	}
+
+
+					tempPlayerMissile.lifeCtr++;
+					if (tempPlayerMissile.lifeCtr > tempPlayerMissile.life){
+						//ConsoleLog.log("removing player missile");
+						playerMissiles.splice(playerMissileCtr,1)
+						tempPlayerMissile=null;
+					}
+				}
+			}
+	
+			function checkCollision() {
+				var playerMissileLength=playerMissiles.length - 1;
+				for (var playerMissileCtr=playerMissileLength;playerMissileCtr>=0;playerMissileCtr--){
+					//console.log("check missile");
+					var armySize = army.length;
+					for (var i = 0; i < armySize; i++) {
+						if (boundingBoxCollide(army[i],playerMissiles[playerMissileCtr])){
+							console.log("boom");
+							playerMissiles[playerMissileCtr].life=0;
+						//	playAnimation = false;
+						}
+					}
+				}
+			}
+	
+	
+	
+	var army = new Array();
+	army.push(new Panzer(context, 0, 0));
+	army.push(new Panzer(context, 32, 32));
+	army.push(new Panzer(context, 64, 64));
+	
+	
+	var objHero = new Hero(context, 150, 150);
+	
+	var keyPressList = [];
+		document.onkeydown = function(e) {
+		//	console.log("down" + e.keyCode);
+			e=e?e:window.event;
+			keyPressList[e.keyCode] = true;
+		}
+		
+		document.onkeyup = function(e) {
+			e=e?e:window.event;
+			keyPressList[e.keyCode] = false;
+		}
+	
+	
+
+	
+	function animate() {
+		if (playAnimation) {
+		        setTimeout(animate, 33);
+		};
+		
+		
+		x += 10;
+		context.clearRect(0, 0, canvasWidth, canvasHeight);
+		
+		var armySize = army.length;
+		for (var i = 0; i < armySize; i++) {
+			
+			var objPanzer = army[i];
+			objPanzer.x++;
+			objPanzer.move();
+			//context.fillRect(tmpShape.x, tmpShape.y, 10, 10);
+			if ((canvasWidth - objPanzer.x) <= 0) objPanzer.x = 0;
+		}
+
+		
+		// reset x if it reaches outer right border
+		//if ((canvasWidth - x) <= 0) x = 0;
+		//console.log('X: Position' + x);
+		//console.log('Distance to X-R' + (canvasWidth - x));
+		listen();
+		objHero.move();
+		renderPlayerMissiles();
+		updatePlayerMissiles();
+		checkCollision();
+	}
+
+	animate();
+	
+	function listen() {
+		// forward
+		if (keyPressList[38] == true) {
+			
+			var angleInRadians = (objHero.rotation - 90)* Math.PI / 180;
+			objHero.facingX = Math.cos(angleInRadians);
+			objHero.facingY = Math.sin(angleInRadians);
+
+			// thrust
+		//	console.log(angleInRadians);
+		
+
+			var movingXNew = objHero.x + objHero.facingX * objHero.thrustAcceleration;
+			var movingYNew = objHero.y + objHero.facingY * objHero.thrustAcceleration;
+			
+			objHero.x = movingXNew;
+			objHero.y = movingYNew;
+			
+				//	console.log(objHero.frameIndex);
+					if(objHero.frameIndex == 0) {
+						objHero.frameIndex = 7;
+					} else 	objHero.frameIndex--;
+			
+		//	console.log("Pos X" + objHero.x);
+		//	console.log("Pos y" + objHero.y);
+		/*	objHero.frameIndex++;
+			
+			if(objHero.frameIndex == objHero.animationFrames.length) {
+				objHero.frameIndex = 0;
+			}*/
+		}
+		
+			if (keyPressList[40] == true) {
+
+				var angleInRadians = (objHero.rotation - 90) * Math.PI / 180;
+				objHero.facingX = Math.cos(angleInRadians);
+				objHero.facingY = Math.sin(angleInRadians);
+
+				// thrust
+			//	console.log(angleInRadians);
+
+
+				var movingXNew = objHero.x - objHero.facingX * objHero.thrustAcceleration;
+				var movingYNew = objHero.y - objHero.facingY * objHero.thrustAcceleration;
+
+				objHero.x = movingXNew;
+				objHero.y = movingYNew;
+
+			//	console.log("Pos X" + objHero.x);
+			//	console.log("Pos y" + objHero.y);
+			
+
+			/*	console.log(objHero.frameIndex);
+				if(objHero.frameIndex == 0) {
+					objHero.frameIndex = 7;
+				} else 	objHero.frameIndex--;*/
+				
+				objHero.frameIndex++;
+
+					if(objHero.frameIndex == objHero.animationFrames.length) {
+						objHero.frameIndex = 0;
+					}
+			}
+		
+	/*	if (keyPressList[38] == true) {
+			// thrust
+			console.log("Hero y" + objHero.y);
+			this.y--;
+			this.frameIndex++;
+			if(this.frameIndex == this.animationFrames.length) {
+				this.frameIndex = 0;
+			}
+		}*/
+		
+		if (keyPressList[39] == true) {
+			if (keyPressList[40] == true) {
+				objHero.rotation -=6;
+			} else {
+				objHero.rotation +=6;
+			}
+		//	objHero.turn();
+		//	console.log(o)
+			// thrust
+		//	console.log("Hero y" + objHero.y);
+			//console.log("Rotation" + objHero.rotation);
+		//	this.x++;
+			/*this.frameIndex++;
+			if(this.frameIndex == this.animationFrames.length) {
+				this.frameIndex = 0;
+			}*/
+		}
+		
+		if (keyPressList[37] == true) {
+			// thrust
+			if (keyPressList[40] == true) {
+				objHero.rotation +=6;
+			} else {
+				objHero.rotation -=6;
+			}
+			
+			//objHero.turn();
+		//	console.log("Hero y" + objHero.y);
+		//	console.log("Rotation" + objHero.rotation);
+		//	this.x--;
+		/*	this.frameIndex++;
+			if(this.frameIndex == this.animationFrames.length) {
+				this.frameIndex = 0;
+			}*/
+		}
+
+		if (keyPressList[32] == true) {
+			objHero.shoot();
+		}
+	}
+}
+
+</script>
+</head>
+<body>
+<div style="position: absolute; top: 0px; left: 0px;">
+<canvas id="canvas" width="500" height="300">
+ Your browser does not support HTML5 Canvas.
+</canvas>
+<div>
+	<button id="startAnimation">Start</button>
+	<button id="stopAnimation">Stop</button>
+</div>
+</body>
+</html>
